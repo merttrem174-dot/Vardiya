@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vardiya Planlayıcı v4.5 (Aylık)</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="polyfills.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🗓️ Vardiya <span class="badge">v4.5</span></div>
+  <div class="controls">
+    <button id="printBtn" class="btn">Yazdır / PDF</button>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card">
+    <h2>Dönem</h2>
+    <div class="row">
+      <label>Ay seç:</label>
+      <input type="month" id="monthPick">
+      <button id="thisMonthBtn" class="btn">Bu Ay</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Ekip</h2>
+    <div class="row">
+      <input type="text" id="memberName" placeholder="İsim Soyisim" />
+      <button id="addMemberBtn" class="btn">Ekle</button>
+      <button id="clearMembersBtn" class="btn danger">Tümünü Sil</button>
+    </div>
+    <div id="membersList" class="list"></div>
+  </section>
+
+  <section class="card">
+    <h2>Ortak Slotlar (Günlük, max 8, kapasite 1)</h2>
+    <div class="row">
+      <input type="text" id="slotLabel" placeholder="Slot adı (örn: Sabah)" />
+      <input type="time" id="slotStart" value="08:00" />
+      <input type="time" id="slotEnd" value="16:00" />
+      <button id="addSlotBtn" class="btn">Slot Ekle</button>
+      <button id="clearSlotsBtn" class="btn danger">Tüm Slotları Sil</button>
+    </div>
+    <div id="slotsList" class="list"></div>
+  </section>
+
+  <section class="card">
+    <h2>Tarihler</h2>
+    <div class="row">
+      <input type="date" id="holidayDate" />
+      <button id="addHolidayBtn" class="btn danger">Tatil Günü Ekle</button>
+      <button id="clearHolidayBtn" class="btn">Tarihi Kaldır</button>
+    </div>
+    <div id="holidayList" class="chips"></div>
+  </section>
+
+  <section class="card">
+    <h2>Yıllık İzin (Kişiye Özel)</h2>
+    <div class="row">
+      <select id="dayoffMember" multiple size="4" style="min-width:220px;"></select>
+      <input type="date" id="dayoffDate" />
+      <button id="addDayoffBtn" class="btn">İzin Ekle</button>
+      <button id="clearDayoffBtn" class="btn">Bu Tarihteki İzinleri Sil</button>
+    </div>
+    <div id="dayoffList" class="list"></div>
+  </section>
+
+  <section class="card">
+    <h2>Kurallar & Çalıştır</h2>
+    <div class="row wrap">
+      <div class="row">
+        <label>Ay başına kişi başı maksimum vardiya:</label>
+        <input type="number" id="maxMonthly" min="0" value="0" style="width:120px">
+        <span class="badge">0 = sınırsız</span>
+      </div>
+      <label><input type="checkbox" id="balanceMonthly" checked> Aylık toplamları dengeli dağıt</label>
+      <label><input type="checkbox" id="antiRepeat" checked> Aynı slotu art arda verme (ceza)</label>
+      <span class="badge">Aynı gün bir kişiye en fazla 1 slot (sabit)</span>
+      <button id="generateBtn" class="btn primary">Tablo Oluştur</button>
+      <button id="csvBtn" class="btn">CSV</button>
+    </div>
+    <div id="legend" class="legend"></div>
+    <div id="tableWrap" class="table-wrap"></div>
+  </section>
+</main>
+
+<footer class="footer no-print">
+  <div>Veriler tarayıcıda saklanır (localStorage). | © 2025</div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
