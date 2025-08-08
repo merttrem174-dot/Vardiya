@@ -1,11 +1,12 @@
 
+'use strict';
 const $ = s => document.querySelector(s);
 const dayNames = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 
 const state = {
   members: [], // {id,name,color}
   slots: [],   // [{id,label,s,e}] max 8
-  holidays: new Set(), // dateStr
+  holidays: [], // store as array for persistence, convert to Set in runtime
   dayoffs: {}, // {'YYYY-MM-DD':[memberId,...]}
   prefs: {balanceMonthly:true, antiRepeat:true, perDayOneSlot:true},
 };
@@ -76,20 +77,20 @@ $('#clearSlotsBtn').addEventListener('click', ()=>{
 // Holidays
 function renderHolidays(){
   const wrap = $('#holidayList'); wrap.innerHTML='';
-  const arr = Array.from(state.holidays).sort();
+  const arr = Array.from(new Set(state.holidays)).sort();
   if(!arr.length){ wrap.innerHTML='<div class="badge">Tatil tarihi yok</div>'; return; }
   arr.forEach(d=>{
     const chip = document.createElement('span'); chip.className='chip'; chip.textContent=d;
     const x = document.createElement('span'); x.textContent='✕'; x.style.cursor='pointer';
-    x.onclick = ()=>{ state.holidays.delete(d); renderHolidays(); };
+    x.onclick = ()=>{ state.holidays = state.holidays.filter(xd=>xd!==d); renderHolidays(); };
     chip.append(' ',x); wrap.appendChild(chip);
   });
 }
 $('#addHolidayBtn').addEventListener('click', ()=>{
-  const d = $('#holidayDate').value; if(!d) return; state.holidays.add(d); renderHolidays();
+  const d = $('#holidayDate').value; if(!d) return; state.holidays.push(d); renderHolidays();
 });
 $('#clearHolidayBtn').addEventListener('click', ()=>{
-  const d = $('#holidayDate').value; if(d){ state.holidays.delete(d); renderHolidays(); }
+  const d = $('#holidayDate').value; if(d){ state.holidays = state.holidays.filter(xd=>xd!==d); renderHolidays(); }
 });
 
 // Annual leaves (person-specific)
@@ -182,11 +183,11 @@ function generate(){
     const dObj = dates[idx];
     const ds = dObj.toISOString().slice(0,10);
     const weekday = dObj.getDay(); // 0=Sun..6=Sat
-    const isHoliday = state.holidays.has(ds);
+    const isHoliday = new Set(state.holidays).has(ds);
     const offSet = new Set(state.dayoffs[ds] || []);
     const assignedToday = new Set(); // enforce per-day one slot per person
 
-    // Detect weekend pair (Sat->Sun)
+    // Weekend pairing (Sat -> Sun rest)
     if(weekday === 6){ // Saturday
       prevSaturdaySet = new Set();
     }
@@ -236,26 +237,19 @@ function generate(){
       }
     }
 
-    // Guarantee: weekend days must have at least one worker
+    // Weekend guarantee: at least one slot on Sat/Sun (if not holiday)
     const isWeekend = (weekday===6 || weekday===0);
     if(isWeekend && !isHoliday && !anyAssigned){
-      // Find an override (least loaded + under cap if set), ignoring dayoff
-      const pool = state.members
-        .filter(m => !assignedToday.has(m.id) and (maxMonthly==0 or counts[m.id] < maxMonthly))
-        .slice()
-        .sort((a,b)=> counts[a.id]-counts[b.id] || a.name.localeCompare(b.name,'tr'));
+      // Find an override (least loaded, under cap if set), ignoring dayoff veto only if absolutely necessary
+      const basePool = state.members.filter(m => !assignedToday.has(m.id) && (maxMonthly==0 || counts[m.id] < maxMonthly));
+      const pool = basePool.slice().sort((a,b)=> counts[a.id]-counts[b.id] || a.name.localeCompare(b.name,'tr'));
       let override = pool.find(m => !offSet.has(m.id));
       if(!override) override = pool[0];
       if(override){
-        // Place override into the first empty cell
         const emptyToken = '<td><span class="badge-unavail">Boş</span></td>';
         const tdIndex = row.indexOf(emptyToken);
         const content = `<td><span class="member-pill"><span class="member-dot" style="background:${override.color}"></span>${override.name} <span class="badge">⚠ override</span></span></td>`;
-        if(tdIndex !== -1){
-          row = row.replace(emptyToken, content);
-        } else {
-          row += content;
-        }
+        if(tdIndex !== -1){ row = row.replace(emptyToken, content); } else { row += content; }
         counts[override.id]++;
         assignedToday.add(override.id);
         if(weekday===6) prevSaturdaySet.add(override.id);
@@ -280,10 +274,10 @@ function generate(){
   });
 
   // Persist
-  localStorage.setItem('shiftPlannerTRv45_state', JSON.stringify({
+  localStorage.setItem('shiftPlannerTRv451_state', JSON.stringify({
     members: state.members,
     slots: state.slots,
-    holidays: Array.from(state.holidays),
+    holidays: state.holidays,
     dayoffs: state.dayoffs,
     prefs: state.prefs,
     maxMonthly,
@@ -296,19 +290,19 @@ function exportCsv(){
   const csv = rows.join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const a = document.createElement('a'); const url = URL.createObjectURL(blob);
-  a.href = url; a.download = 'vardiya_aylik_v45.csv'; document.body.appendChild(a); a.click();
+  a.href = url; a.download = 'vardiya_aylik_v451.csv'; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
 }
 
 // Load persisted state
 (function load(){
   try{
-    const s = localStorage.getItem('shiftPlannerTRv45_state');
+    const s = localStorage.getItem('shiftPlannerTRv451_state');
     if(s){
       const d = JSON.parse(s);
       state.members = d.members || [];
       state.slots = d.slots || [];
-      state.holidays = new Set(d.holidays || []);
+      state.holidays = Array.isArray(d.holidays) ? d.holidays : [];
       state.dayoffs = d.dayoffs || {};
       state.prefs = Object.assign(state.prefs, d.prefs||{});
       if(typeof d.maxMonthly === 'number') document.getElementById('maxMonthly').value = String(d.maxMonthly);
