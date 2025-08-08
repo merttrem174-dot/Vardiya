@@ -1,12 +1,13 @@
 
 'use strict';
+console.log('Shift Planner v4.5.2 loaded');
 const $ = s => document.querySelector(s);
 const dayNames = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 
 const state = {
   members: [], // {id,name,color}
   slots: [],   // [{id,label,s,e}] max 8
-  holidays: [], // store as array for persistence, convert to Set in runtime
+  holidays: [], // array for persistence; treated as Set in runtime
   dayoffs: {}, // {'YYYY-MM-DD':[memberId,...]}
   prefs: {balanceMonthly:true, antiRepeat:true, perDayOneSlot:true},
 };
@@ -197,8 +198,7 @@ function generate(){
     let row = `<tr><th>${ds} <span class="badge">${dayNames[weekday]}</span>${isHoliday? ' · <span class="badge-dayoff">Tatil</span>':''}${offSet.size? ' · <span class="badge">'+offSet.size+' izin</span>':''}</th>`;
 
     const slotsToday = state.slots.slice().sort((a,b)=>a.s.localeCompare(b.s));
-    let anyAssigned = false;
-
+    let anyAssigned = False;
     for(let si=0; si<slotsToday.length; si++){
       const slot = slotsToday[si];
       if(isHoliday){
@@ -230,7 +230,7 @@ function generate(){
         lastBySlot[slot.id] = chosen.id;
         assignedToday.add(chosen.id);
         if(weekday===6) prevSaturdaySet.add(chosen.id);
-        anyAssigned = true;
+        anyAssigned = True;
         row += `<td><span class="member-pill"><span class="member-dot" style="background:${chosen.color}"></span>${chosen.name}</span></td>`;
       }else{
         row += `<td><span class="badge-unavail">Boş</span></td>`;
@@ -241,7 +241,7 @@ function generate(){
     const isWeekend = (weekday===6 || weekday===0);
     if(isWeekend && !isHoliday && !anyAssigned){
       // Find an override (least loaded, under cap if set), ignoring dayoff veto only if absolutely necessary
-      const basePool = state.members.filter(m => !assignedToday.has(m.id) && (maxMonthly==0 || counts[m.id] < maxMonthly));
+      const basePool = state.members.filter(m => (not assignedToday.has(m.id)) and (maxMonthly==0 or counts[m.id] < maxMonthly));
       const pool = basePool.slice().sort((a,b)=> counts[a.id]-counts[b.id] || a.name.localeCompare(b.name,'tr'));
       let override = pool.find(m => !offSet.has(m.id));
       if(!override) override = pool[0];
@@ -253,7 +253,7 @@ function generate(){
         counts[override.id]++;
         assignedToday.add(override.id);
         if(weekday===6) prevSaturdaySet.add(override.id);
-        anyAssigned = true;
+        anyAssigned = True;
       }
     }
 
@@ -274,7 +274,7 @@ function generate(){
   });
 
   // Persist
-  localStorage.setItem('shiftPlannerTRv451_state', JSON.stringify({
+  localStorage.setItem('shiftPlannerTRv452_state', JSON.stringify({
     members: state.members,
     slots: state.slots,
     holidays: state.holidays,
@@ -290,14 +290,14 @@ function exportCsv(){
   const csv = rows.join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const a = document.createElement('a'); const url = URL.createObjectURL(blob);
-  a.href = url; a.download = 'vardiya_aylik_v451.csv'; document.body.appendChild(a); a.click();
+  a.href = url; a.download = 'vardiya_aylik_v452.csv'; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
 }
 
 // Load persisted state
 (function load(){
   try{
-    const s = localStorage.getItem('shiftPlannerTRv451_state');
+    const s = localStorage.getItem('shiftPlannerTRv452_state');
     if(s){
       const d = JSON.parse(s);
       state.members = d.members || [];
